@@ -1,0 +1,60 @@
+; Define constants
+
+CACHE_SIZE equ 1000h   ; Cache size in bytes
+BLOCK_SIZE equ 10h    ; Block size in bytes
+
+; Define global variables
+
+cache_memory dd CACHE_SIZE dup (?)  ; Cache memory
+block_memory dd BLOCK_SIZE dup (?)  ; Block memory
+
+; Read a value from the cache
+
+read_from_cache:
+
+  ; Input: register eax contains the address of the value to be read
+  ; Output: register eax contains the value that was read
+
+  ; Calculate the cache index and the block offset
+  mov ebx, eax     ; ebx = address
+  shr ebx, 4       ; ebx = address / 16
+  and ebx, 0FFh    ; ebx = address % 16
+
+  ; Check if the value is in the cache
+  mov eax, [cache_memory + ebx*4]
+  cmp eax, 0       ; If eax == 0, the value is not in the cache
+  jne value_found  ; Jump to value_found if the value is in the cache
+
+  ; The value is not in the cache. We need to load it from memory.
+  mov eax, [block_memory + ebx*4]
+  mov [cache_memory + ebx*4], eax
+
+  ; Jump to value_found
+  jmp value_found
+
+value_found:
+
+  ; The value has been found in the cache or loaded from memory.
+  ; Return the value in register eax.
+  ret
+
+; Write a value to the cache
+
+write_to_cache:
+
+  ; Input: register eax contains the address of the value to be written
+  ;        register ebx contains the value to be written
+  ; Output: none
+
+  ; Calculate the cache index and the block offset
+  shr eax, 4       ; eax = address / 16
+  and eax, 0FFh    ; eax = address % 16
+
+  ; Write the value to the cache
+  mov [cache_memory + eax*4], ebx
+
+  ; Write the value to the block in memory
+  mov [block_memory + eax*4], ebx
+
+  ; Return
+  ret
